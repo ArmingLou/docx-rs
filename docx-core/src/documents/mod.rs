@@ -1239,26 +1239,46 @@ impl Docx {
 
     /// Collect footnotes from all Runs to the docx footnotes node.
     pub fn collect_footnotes(&mut self) -> bool {
-        let footnotes: Vec<Footnote> = self
-            .document
-            .children
-            .iter()
-            .filter_map(|child| match child {
-                DocumentChild::Paragraph(paragraph) => Some(&paragraph.children),
-                _ => None,
-            })
-            .flat_map(|children| children.iter())
-            .filter_map(|para_child| match para_child {
-                ParagraphChild::Run(run) => Some(&run.children),
-                _ => None,
-            })
-            .flat_map(|children| children.iter())
-            .filter_map(|run_child| match run_child {
-                RunChild::FootnoteReference(footnote_ref) => Some(footnote_ref),
-                _ => None,
-            })
-            .map(Into::<Footnote>::into)
-            .collect();
+        let mut footnotes: Vec<Footnote> = Vec::new();
+
+        for child in &self.document.children {
+            match child {
+                DocumentChild::Paragraph(paragraph) => {
+                    collect_footnotes_in_paragraph(paragraph, &mut footnotes);
+                }
+                DocumentChild::Table(table) => {
+                    collect_footnotes_in_table(table, &mut footnotes);
+                }
+                DocumentChild::TableOfContents(toc) => {
+                    // Collect footnotes from TOC content
+                    for content in &toc.before_contents {
+                        match content {
+                            TocContent::Paragraph(paragraph) => {
+                                collect_footnotes_in_paragraph(paragraph, &mut footnotes);
+                            }
+                            TocContent::Table(table) => {
+                                collect_footnotes_in_table(table, &mut footnotes);
+                            }
+                        }
+                    }
+                    for content in &toc.after_contents {
+                        match content {
+                            TocContent::Paragraph(paragraph) => {
+                                collect_footnotes_in_paragraph(paragraph, &mut footnotes);
+                            }
+                            TocContent::Table(table) => {
+                                collect_footnotes_in_table(table, &mut footnotes);
+                            }
+                        }
+                    }
+                }
+                DocumentChild::StructuredDataTag(tag) => {
+                    collect_footnotes_in_structured_data_tag(tag, &mut footnotes);
+                }
+                _ => {}
+            }
+        }
+
         let is_footnotes = !footnotes.is_empty();
         self.footnotes.add(footnotes);
         is_footnotes
@@ -1489,6 +1509,111 @@ fn push_comment_and_comment_extended(
             }
         }
         // TODO: Support table in comment
+    }
+}
+
+fn collect_footnotes_in_paragraph(paragraph: &Paragraph, footnotes: &mut Vec<Footnote>) {
+    for child in &paragraph.children {
+        match child {
+            ParagraphChild::Run(run) => {
+                collect_footnotes_in_run(run, footnotes);
+            }
+            ParagraphChild::Hyperlink(hyperlink) => {
+                for child in &hyperlink.children {
+                    if let ParagraphChild::Run(run) = child {
+                        collect_footnotes_in_run(run, footnotes);
+                    }
+                }
+            }
+            ParagraphChild::Insert(insert) => {
+                for child in &insert.children {
+                    if let InsertChild::Run(run) = child {
+                        collect_footnotes_in_run(run, footnotes);
+                    }
+                }
+            }
+            ParagraphChild::Delete(delete) => {
+                for child in &delete.children {
+                    if let DeleteChild::Run(run) = child {
+                        collect_footnotes_in_run(run, footnotes);
+                    }
+                }
+            }
+            ParagraphChild::StructuredDataTag(tag) => {
+                collect_footnotes_in_structured_data_tag(tag, footnotes);
+            }
+            _ => {}
+        }
+    }
+}
+
+fn collect_footnotes_in_run(run: &Run, footnotes: &mut Vec<Footnote>) {
+    for child in &run.children {
+        if let RunChild::FootnoteReference(footnote_ref) = child {
+            footnotes.push(footnote_ref.into());
+        }
+    }
+}
+
+fn collect_footnotes_in_table(table: &Table, footnotes: &mut Vec<Footnote>) {
+    for TableChild::TableRow(row) in &table.rows {
+        for TableRowChild::TableCell(cell) in &row.cells {
+            for content in &cell.children {
+                match content {
+                    TableCellContent::Paragraph(paragraph) => {
+                        collect_footnotes_in_paragraph(paragraph, footnotes);
+                    }
+                    TableCellContent::Table(table) => {
+                        collect_footnotes_in_table(table, footnotes);
+                    }
+                    TableCellContent::StructuredDataTag(tag) => {
+                        collect_footnotes_in_structured_data_tag(tag, footnotes);
+                    }
+                    TableCellContent::TableOfContents(toc) => {
+                        for content in &toc.before_contents {
+                            match content {
+                                TocContent::Paragraph(paragraph) => {
+                                    collect_footnotes_in_paragraph(paragraph, footnotes);
+                                }
+                                TocContent::Table(table) => {
+                                    collect_footnotes_in_table(table, footnotes);
+                                }
+                            }
+                        }
+                        for content in &toc.after_contents {
+                            match content {
+                                TocContent::Paragraph(paragraph) => {
+                                    collect_footnotes_in_paragraph(paragraph, footnotes);
+                                }
+                                TocContent::Table(table) => {
+                                    collect_footnotes_in_table(table, footnotes);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn collect_footnotes_in_structured_data_tag(tag: &StructuredDataTag, footnotes: &mut Vec<Footnote>) {
+    for child in &tag.children {
+        match child {
+            StructuredDataTagChild::Run(run) => {
+                collect_footnotes_in_run(run, footnotes);
+            }
+            StructuredDataTagChild::Paragraph(paragraph) => {
+                collect_footnotes_in_paragraph(paragraph, footnotes);
+            }
+            StructuredDataTagChild::Table(table) => {
+                collect_footnotes_in_table(table, footnotes);
+            }
+            StructuredDataTagChild::StructuredDataTag(tag) => {
+                collect_footnotes_in_structured_data_tag(tag, footnotes);
+            }
+            _ => {}
+        }
     }
 }
 
