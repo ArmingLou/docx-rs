@@ -336,7 +336,20 @@ impl Run {
     pub fn add_footnote_reference(mut self, footnote: Footnote) -> Run {
         self.run_property = RunProperty::new()
             .style("FootnoteReference")
-            .vert_align(VertAlignType::SuperScript);
+            .vert_align(VertAlignType::SuperScript)
+            .size(16); // 8pt = 16 half-points，比默认字体小一些但仍然清晰可见
+        self.children
+            .push(RunChild::FootnoteReference(footnote.into()));
+        self
+    }
+
+    /// Add footnote reference with custom size
+    /// size is in half-points (e.g., 16 = 8pt, 20 = 10pt, 24 = 12pt)
+    pub fn add_footnote_reference_with_size(mut self, footnote: Footnote, size: usize) -> Run {
+        self.run_property = RunProperty::new()
+            .style("FootnoteReference")
+            .vert_align(VertAlignType::SuperScript)
+            .size(size);
         self.children
             .push(RunChild::FootnoteReference(footnote.into()));
         self
