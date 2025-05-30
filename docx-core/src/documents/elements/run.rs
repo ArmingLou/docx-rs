@@ -334,7 +334,9 @@ impl Run {
     }
 
     pub fn add_footnote_reference(mut self, footnote: Footnote) -> Run {
-        self.run_property = RunProperty::new().style("FootnoteReference");
+        self.run_property = RunProperty::new()
+            .style("FootnoteReference")
+            .vert_align(VertAlignType::SuperScript);
         self.children
             .push(RunChild::FootnoteReference(footnote.into()));
         self

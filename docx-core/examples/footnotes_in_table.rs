@@ -57,5 +57,8 @@ pub fn main() -> Result<(), DocxError> {
         .pack(file)?;
 
     println!("已创建包含表格脚注的文档: footnotes_in_table.docx");
+    println!("修复内容:");
+    println!("1. 表格中的脚注现在能够被正确收集到文档底部");
+    println!("2. 脚注引用现在显示为上标样式，而不是普通文本");
     Ok(())
 }
