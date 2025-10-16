@@ -315,7 +315,11 @@ impl Docx {
 
     pub fn add_section(mut self, mut section: Section) -> Docx {
         self.register_section_relationships(&mut section);
-        self.document = self.document.add_section(section);
+        let previous_property = mem::take(&mut self.document.section_property);
+        let completed_section = Section::new().with_property(previous_property);
+        let next_property = section.into_property();
+        self.document.section_property = next_property;
+        self.document = self.document.add_section(completed_section);
         self
     }
 

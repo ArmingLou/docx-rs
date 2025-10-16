@@ -131,6 +131,10 @@ impl Section {
     pub(crate) fn property_mut(&mut self) -> &mut SectionProperty {
         &mut self.property
     }
+
+    pub(crate) fn into_property(self) -> SectionProperty {
+        self.property
+    }
 }
 
 impl Default for Section {
