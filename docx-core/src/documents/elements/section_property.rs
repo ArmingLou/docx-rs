@@ -73,6 +73,16 @@ impl SectionProperty {
         self
     }
 
+    pub fn columns(mut self, columns: usize) -> Self {
+        self.columns = columns;
+        self
+    }
+
+    pub fn space(mut self, space: usize) -> Self {
+        self.space = space;
+        self
+    }
+
     pub fn text_direction(mut self, direction: String) -> Self {
         self.text_direction = direction;
         self
@@ -80,6 +90,11 @@ impl SectionProperty {
 
     pub fn title_pg(mut self) -> Self {
         self.title_pg = true;
+        self
+    }
+
+    pub fn section_type(mut self, section_type: SectionType) -> Self {
+        self.section_type = Some(section_type);
         self
     }
 
@@ -271,6 +286,16 @@ mod tests {
         assert_eq!(
             str::from_utf8(&b).unwrap(),
             r#"<w:sectPr><w:pgSz w:w="11906" w:h="16838" /><w:pgMar w:top="1985" w:right="1701" w:bottom="1701" w:left="1701" w:header="851" w:footer="992" w:gutter="0" /><w:cols w:space="425" w:num="1" /><w:titlePg /></w:sectPr>"#
+        );
+    }
+
+    #[test]
+    fn test_section_property_with_type() {
+        let c = SectionProperty::new().section_type(SectionType::Continuous);
+        let b = c.build();
+        assert_eq!(
+            str::from_utf8(&b).unwrap(),
+            r#"<w:sectPr><w:pgSz w:w="11906" w:h="16838" /><w:pgMar w:top="1985" w:right="1701" w:bottom="1701" w:left="1701" w:header="851" w:footer="992" w:gutter="0" /><w:cols w:space="425" w:num="1" /><w:type w:val="continuous" /></w:sectPr>"#
         );
     }
 }

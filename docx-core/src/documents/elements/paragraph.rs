@@ -612,6 +612,17 @@ mod tests {
     }
 
     #[test]
+    fn test_paragraph_with_section_property() {
+        let paragraph = Paragraph::new()
+            .section_property(SectionProperty::new().section_type(SectionType::Continuous));
+        let xml = paragraph.build();
+        assert_eq!(
+            str::from_utf8(&xml).unwrap(),
+            r#"<w:p w14:paraId="12345678"><w:pPr><w:rPr /><w:sectPr><w:pgSz w:w="11906" w:h="16838" /><w:pgMar w:top="1985" w:right="1701" w:bottom="1701" w:left="1701" w:header="851" w:footer="992" w:gutter="0" /><w:cols w:space="425" w:num="1" /><w:type w:val="continuous" /></w:sectPr></w:pPr></w:p>"#
+        );
+    }
+
+    #[test]
     fn test_raw_text() {
         let b = Paragraph::new()
             .add_run(Run::new().add_text("Hello"))

@@ -9,12 +9,116 @@ import { BookmarkStart } from "./bookmark-start";
 import { BookmarkEnd } from "./bookmark-end";
 import { Hyperlink, convertHyperlinkType } from "./hyperlink";
 import { setParagraphProperty } from "./paragraph-property";
+import { SectionProperty as SectionPropertyClass } from "./section-property";
+import { Section } from "./section";
+import { Header } from "./header";
+import { Footer } from "./footer";
 
 import * as wasm from "./pkg";
 import { PageNum } from "./page-num";
 import { NumPages } from "./num-pages";
 
-type Child = Paragraph | Table | Comment | Hyperlink;
+type Child = Paragraph | Table | Comment | Hyperlink | Section;
+
+function buildHeaderContent(header: Header) {
+  let wasmHeader = wasm.createHeader();
+  header.children.forEach((child) => {
+    if (child instanceof Paragraph) {
+      wasmHeader = wasmHeader.add_paragraph(build(child));
+    } else if (child instanceof Table) {
+      wasmHeader = wasmHeader.add_table(child.build());
+    }
+  });
+  return wasmHeader;
+}
+
+function buildFooterContent(footer: Footer) {
+  let wasmFooter = wasm.createFooter();
+  footer.children.forEach((child) => {
+    if (child instanceof Paragraph) {
+      wasmFooter = wasmFooter.add_paragraph(build(child));
+    } else if (child instanceof Table) {
+      wasmFooter = wasmFooter.add_table(child.build());
+    }
+  });
+  return wasmFooter;
+}
+
+function buildSectionProperty(section: SectionPropertyClass) {
+  let property = wasm.createSectionProperty();
+
+  if (section._pageMargin) {
+    const { top, left, bottom, right, header, footer, gutter } =
+      section._pageMargin;
+    let margin = wasm.createPageMargin();
+    margin = margin.top(top).left(left).bottom(bottom).right(right);
+    margin = margin.header(header).footer(footer).gutter(gutter);
+    property = property.page_margin(margin);
+  }
+
+  if (section._pageSize) {
+    const { w, h, orient } = section._pageSize;
+    property = property.page_size(w, h);
+    if (orient) {
+      if (orient === "landscape") {
+        property = property.page_orient(wasm.PageOrientationType.Landscape);
+      } else if (orient === "portrait") {
+        property = property.page_orient(wasm.PageOrientationType.Portrait);
+      }
+    }
+  }
+
+  if (section._titlePg) {
+    property = property.title_pg();
+  }
+
+  if (section._pageTypeNum) {
+    const { start, chapStyle } = section._pageTypeNum;
+    const pageNumType = wasm.createPageNumType(start, chapStyle);
+    property = property.page_num_type(pageNumType);
+  }
+
+  if (section._docGrid) {
+    const { gridType, charSpace, linePitch } = section._docGrid;
+    let type = wasm.DocGridType.Default;
+    switch (gridType) {
+      case "lines":
+        type = wasm.DocGridType.Lines;
+        break;
+      case "linesAndChars":
+        type = wasm.DocGridType.LinesAndChars;
+        break;
+      case "snapToChars":
+        type = wasm.DocGridType.SnapToChars;
+        break;
+      default:
+        break;
+    }
+    property = property.doc_grid(type, linePitch, charSpace);
+  }
+
+  if (section._sectionType) {
+    switch (section._sectionType) {
+      case "nextPage":
+        property = property.section_type(wasm.SectionType.NextPage);
+        break;
+      case "nextColumn":
+        property = property.section_type(wasm.SectionType.NextColumn);
+        break;
+      case "continuous":
+        property = property.section_type(wasm.SectionType.Continuous);
+        break;
+      case "evenPage":
+        property = property.section_type(wasm.SectionType.EvenPage);
+        break;
+      case "oddPage":
+        property = property.section_type(wasm.SectionType.OddPage);
+        break;
+    }
+  }
+
+  return property;
+}
 
 function buildHyperlink(child: Hyperlink) {
   let hyperlink = wasm.createHyperlink(child.v, convertHyperlinkType(child));
@@ -41,6 +145,44 @@ function buildHyperlink(child: Hyperlink) {
   });
 
   return hyperlink;
+}
+
+function buildSection(section: Section) {
+  let wasmSection = wasm.createSection();
+  const property = buildSectionProperty(section.property);
+  wasmSection = wasmSection.section_property(property);
+
+  if (section.property._header) {
+    const header = buildHeaderContent(section.property._header);
+    wasmSection = wasmSection.header(header);
+  }
+
+  if (section.property._firstHeader) {
+    const header = buildHeaderContent(section.property._firstHeader);
+    wasmSection = wasmSection.first_header(header);
+  }
+
+  if (section.property._evenHeader) {
+    const header = buildHeaderContent(section.property._evenHeader);
+    wasmSection = wasmSection.even_header(header);
+  }
+
+  if (section.property._footer) {
+    const footer = buildFooterContent(section.property._footer);
+    wasmSection = wasmSection.footer(footer);
+  }
+
+  if (section.property._firstFooter) {
+    const footer = buildFooterContent(section.property._firstFooter);
+    wasmSection = wasmSection.first_footer(footer);
+  }
+
+  if (section.property._evenFooter) {
+    const footer = buildFooterContent(section.property._evenFooter);
+    wasmSection = wasmSection.even_footer(footer);
+  }
+
+  return wasmSection;
 }
 
 function buildParagraph(child: Paragraph) {
@@ -74,6 +216,11 @@ function buildParagraph(child: Paragraph) {
   });
 
   paragraph = setParagraphProperty(paragraph, child.property);
+
+  if (child.property.sectionProperty) {
+    const sectionProp = buildSectionProperty(child.property.sectionProperty);
+    paragraph = paragraph.section_property(sectionProp);
+  }
 
   if (typeof child.property.styleId !== "undefined") {
     paragraph = paragraph.style(child.property.styleId);
@@ -146,6 +293,8 @@ export function build<T>(child: Child) {
     return buildParagraph(child) as T;
   } else if (child instanceof Hyperlink) {
     return buildHyperlink(child) as T;
+  } else if (child instanceof Section) {
+    return buildSection(child) as T;
   }
   throw new Error(`not found builder for child: ${child}`);
 }

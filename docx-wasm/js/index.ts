@@ -15,12 +15,14 @@ import { WebExtension } from "./webextension";
 import { Footer } from "./footer";
 import { Header } from "./header";
 import { build } from "./builder";
+import { Section } from "./section";
 
 import {
   SectionProperty,
   PageMargin,
   PageOrientationType,
 } from "./section-property";
+import { SectionType } from "./json/section-property";
 import { CommentJSON, DocGridType, DocxJSON } from "./json";
 
 import * as wasm from "./pkg";
@@ -33,6 +35,7 @@ export class Docx {
     | BookmarkStart
     | BookmarkEnd
     | TableOfContents
+    | Section
   )[] = [];
 
   hasNumberings = false;
@@ -79,6 +82,14 @@ export class Docx {
       this.hasNumberings = true;
     }
     this.children.push(t);
+    return this;
+  }
+
+  addSection(section: Section) {
+    if (section.hasNumberings) {
+      this.hasNumberings = true;
+    }
+    this.children.push(section);
     return this;
   }
 
@@ -174,6 +185,11 @@ export class Docx {
 
   docGrid(type: DocGridType, linePitch?: number, charSpace?: number) {
     this.sectionProperty.docGrid(type, linePitch, charSpace);
+    return this;
+  }
+
+  sectionType(type: SectionType) {
+    this.sectionProperty.sectionType(type);
     return this;
   }
 
@@ -387,6 +403,8 @@ export class Docx {
         docx = docx.add_bookmark_end(child.id);
       } else if (child instanceof TableOfContents) {
         docx = docx.add_table_of_contents(child.buildWasmObject());
+      } else if (child instanceof Section) {
+        docx = docx.add_section(build(child));
       }
     });
 
@@ -581,6 +599,26 @@ export class Docx {
           break;
       }
       docx = docx.doc_grid(type, linePitch, charSpace);
+    }
+
+    if (this.sectionProperty._sectionType) {
+      switch (this.sectionProperty._sectionType) {
+        case "nextPage":
+          docx = docx.section_type(wasm.SectionType.NextPage);
+          break;
+        case "nextColumn":
+          docx = docx.section_type(wasm.SectionType.NextColumn);
+          break;
+        case "continuous":
+          docx = docx.section_type(wasm.SectionType.Continuous);
+          break;
+        case "evenPage":
+          docx = docx.section_type(wasm.SectionType.EvenPage);
+          break;
+        case "oddPage":
+          docx = docx.section_type(wasm.SectionType.OddPage);
+          break;
+      }
     }
 
     for (const s of this.styles?.styles) {

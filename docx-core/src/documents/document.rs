@@ -5,6 +5,7 @@ use std::io::Write;
 use super::*;
 use crate::documents::BuildXML;
 use crate::xml_builder::*;
+use crate::SectionType;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -24,6 +25,7 @@ pub enum DocumentChild {
     CommentEnd(CommentRangeEnd),
     StructuredDataTag(Box<StructuredDataTag>),
     TableOfContents(Box<TableOfContents>),
+    Section(Box<Section>),
 }
 
 impl Serialize for DocumentChild {
@@ -78,6 +80,12 @@ impl Serialize for DocumentChild {
                 let mut t = serializer.serialize_struct("TableOfContents", 2)?;
                 t.serialize_field("type", "tableOfContents")?;
                 t.serialize_field("data", r)?;
+                t.end()
+            }
+            DocumentChild::Section(ref s) => {
+                let mut t = serializer.serialize_struct("Section", 2)?;
+                t.serialize_field("type", "section")?;
+                t.serialize_field("data", s)?;
                 t.end()
             }
         }
@@ -165,6 +173,11 @@ impl Document {
         self
     }
 
+    pub fn section_type(mut self, section_type: SectionType) -> Self {
+        self.section_property = self.section_property.section_type(section_type);
+        self
+    }
+
     pub fn default_section_property(mut self, property: SectionProperty) -> Self {
         self.section_property = property;
         self
@@ -225,6 +238,12 @@ impl Document {
         self
     }
 
+    pub fn add_section(mut self, section: Section) -> Self {
+        self.children
+            .push(DocumentChild::Section(Box::new(section)));
+        self
+    }
+
     pub fn columns(mut self, col: usize) -> Self {
         self.section_property.columns = col;
         self
@@ -255,6 +274,7 @@ impl BuildXML for DocumentChild {
             DocumentChild::CommentEnd(v) => v.build_to(stream),
             DocumentChild::StructuredDataTag(v) => v.build_to(stream),
             DocumentChild::TableOfContents(v) => v.build_to(stream),
+            DocumentChild::Section(v) => v.build_to(stream),
         }
     }
 }
@@ -316,5 +336,29 @@ mod tests {
             str::from_utf8(&b).unwrap(),
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" mc:Ignorable="w14 wp14"><w:body><w:p w14:paraId="12345678"><w:pPr><w:rPr /></w:pPr><w:r><w:rPr /><w:t xml:space="preserve">Hello</w:t></w:r></w:p><w:sectPr><w:pgSz w:w="11906" w:h="16838" /><w:pgMar w:top="1985" w:right="1701" w:bottom="1701" w:left="1701" w:header="851" w:footer="992" w:gutter="0" /><w:cols w:space="425" w:num="2" /></w:sectPr></w:body></w:document>"#
         );
+    }
+
+    #[test]
+    fn test_document_section_type() {
+        let b = Document::new()
+            .section_type(SectionType::Continuous)
+            .add_paragraph(Paragraph::new())
+            .build();
+        assert!(str::from_utf8(&b)
+            .unwrap()
+            .contains(r#"<w:type w:val="continuous" />"#));
+    }
+
+    #[test]
+    fn test_document_multiple_sections() {
+        let section = Section::new().section_type(SectionType::NextPage);
+        let bytes = Document::new()
+            .add_paragraph(Paragraph::new())
+            .add_section(section)
+            .add_paragraph(Paragraph::new())
+            .build();
+        let xml = str::from_utf8(&bytes).unwrap();
+        assert_eq!(xml.matches("<w:sectPr").count(), 2);
+        assert!(xml.contains("<w:pPr><w:sectPr"));
     }
 }

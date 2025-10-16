@@ -68,9 +68,16 @@ mod wps_shape;
 mod wps_text_box;
 mod xml_element;
 
-use std::{collections::HashMap, io::Cursor, path::PathBuf};
+use std::{
+    collections::HashMap,
+    io::Cursor,
+    path::PathBuf,
+    sync::{Mutex, OnceLock},
+};
 
 use crate::documents::*;
+
+static READ_DOCX_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
 pub use attributes::*;
 pub use document_rels::*;
@@ -173,6 +180,12 @@ fn read_themes(rels: &ReadDocumentRels, archive: &mut ZipArchive<Cursor<&[u8]>>)
 }
 
 pub fn read_docx(buf: &[u8]) -> Result<Docx, ReaderError> {
+    let _lock = READ_DOCX_LOCK
+        .get_or_init(|| Mutex::new(()))
+        .lock()
+        .unwrap();
+    crate::reset_para_id();
+
     let mut docx = Docx::new();
     let cur = Cursor::new(buf);
     let mut archive = zip::ZipArchive::new(cur)?;

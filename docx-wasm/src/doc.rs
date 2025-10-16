@@ -43,6 +43,11 @@ impl Docx {
         self
     }
 
+    pub fn add_section(mut self, section: Section) -> Self {
+        self.0 = self.0.add_section(section.take());
+        self
+    }
+
     pub fn add_abstract_numbering(mut self, num: AbstractNumbering) -> Docx {
         self.0.numberings = self.0.numberings.add_abstract_numbering(num.take());
         self
@@ -140,6 +145,11 @@ impl Docx {
 
     pub fn page_margin(mut self, margin: PageMargin) -> Docx {
         self.0 = self.0.page_margin(margin.take());
+        self
+    }
+
+    pub fn section_type(mut self, section_type: docx_rs::SectionType) -> Self {
+        self.0 = self.0.section_type(section_type);
         self
     }
 
