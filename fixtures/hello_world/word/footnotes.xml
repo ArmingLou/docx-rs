@@ -23,7 +23,7 @@
                 <w:rPr>
                     <w:rStyle w:val="FootnoteReference"></w:rStyle>
                 </w:rPr>
-                <w:footnoteRef></w:footnoteRef>
+                <w:footnoteRef />
             </w:r>
             <w:r>
                 <w:rPr></w:rPr>
@@ -40,7 +40,7 @@
                 <w:rPr>
                     <w:rStyle w:val="FootnoteReference"></w:rStyle>
                 </w:rPr>
-                <w:footnoteRef></w:footnoteRef>
+                <w:footnoteRef />
             </w:r>
             <w:r>
                 <w:rPr></w:rPr>

@@ -47,6 +47,25 @@ fn test_footnote_reference_has_superscript_style() {
 }
 
 #[test]
+fn test_footnote_body_starts_with_reference_marker() {
+    let footnote =
+        Footnote::new().add_content(Paragraph::new().add_run(Run::new().add_text("content")));
+
+    let mut docx = Docx::new().add_paragraph(
+        Paragraph::new().add_run(Run::new().add_footnote_reference(footnote.clone())),
+    );
+
+    let _ = docx.collect_footnotes();
+    let xml = docx.footnotes.build();
+    let xml_str = str::from_utf8(&xml).unwrap();
+
+    assert!(
+        xml_str.contains(r#"<w:footnoteReference w:id="1" />"#),
+        "Footnote body should include footnote reference marker"
+    );
+}
+
+#[test]
 fn test_footnote_in_paragraph_has_superscript() {
     // 创建脚注
     let footnote =

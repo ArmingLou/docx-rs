@@ -2,12 +2,10 @@ use docx_rs::*;
 
 #[test]
 fn sections_have_independent_footers_and_page_numbers() {
-    let footer_one = Footer::new().add_paragraph(
-        Paragraph::new().add_run(Run::new().add_text("Section 1 Footer")),
-    );
-    let footer_two = Footer::new().add_paragraph(
-        Paragraph::new().add_run(Run::new().add_text("Section 2 Footer")),
-    );
+    let footer_one = Footer::new()
+        .add_paragraph(Paragraph::new().add_run(Run::new().add_text("Section 1 Footer")));
+    let footer_two = Footer::new()
+        .add_paragraph(Paragraph::new().add_run(Run::new().add_text("Section 2 Footer")));
 
     let section_two = Section::new()
         .footer(footer_two.clone())
@@ -39,18 +37,13 @@ fn sections_have_independent_footers_and_page_numbers() {
     assert!(rels.contains(r#"Id="rIdFooter2""#));
 }
 
-
 #[test]
 fn first_section_next_page_does_not_insert_leading_break() {
     let docx = Docx::new()
         .add_section(Section::new().section_type(SectionType::NextPage))
-        .add_paragraph(
-            Paragraph::new().add_run(Run::new().add_text("First section content")),
-        )
+        .add_paragraph(Paragraph::new().add_run(Run::new().add_text("First section content")))
         .add_section(Section::new())
-        .add_paragraph(
-            Paragraph::new().add_run(Run::new().add_text("Second section content")),
-        )
+        .add_paragraph(Paragraph::new().add_run(Run::new().add_text("Second section content")))
         .build();
 
     let xml = String::from_utf8(docx.document.clone()).unwrap();
