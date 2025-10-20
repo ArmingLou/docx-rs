@@ -16,6 +16,7 @@ pub struct Settings {
     doc_vars: Vec<DocVar>,
     even_and_odd_headers: bool,
     adjust_line_height_in_table: bool,
+    balance_single_byte_double_byte_width: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     character_spacing_control: Option<CharacterSpacingValues>,
 }
@@ -50,6 +51,11 @@ impl Settings {
         self
     }
 
+    pub fn balance_single_byte_double_byte_width(mut self, enable: bool) -> Self {
+        self.balance_single_byte_double_byte_width = enable;
+        self
+    }
+
     pub fn character_spacing_control(mut self, val: CharacterSpacingValues) -> Self {
         self.character_spacing_control = Some(val);
         self
@@ -65,6 +71,7 @@ impl Default for Settings {
             doc_vars: vec![],
             even_and_odd_headers: false,
             adjust_line_height_in_table: false,
+            balance_single_byte_double_byte_width: true,
             character_spacing_control: None,
         }
     }
@@ -82,7 +89,9 @@ impl BuildXML for Settings {
             .add_child(&self.zoom)?
             .open_compat()?
             .space_for_ul()?
-            .balance_single_byte_double_byte_width()?
+            .apply_if(self.balance_single_byte_double_byte_width, |b| {
+                b.balance_single_byte_double_byte_width()
+            })?
             .do_not_leave_backslash_alone()?
             .ul_trail_space()?
             .do_not_expand_shift_return()?
@@ -148,5 +157,16 @@ mod tests {
             str::from_utf8(&b).unwrap(),
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"><w:defaultTabStop w:val="840" /><w:zoom w:percent="100" /><w:compat><w:spaceForUL /><w:balanceSingleByteDoubleByteWidth /><w:doNotLeaveBackslashAlone /><w:ulTrailSpace /><w:doNotExpandShiftReturn /><w:useFELayout /><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15" /><w:compatSetting w:name="overrideTableStyleFontSizeAndJustification" w:uri="http://schemas.microsoft.com/office/word" w:val="1" /><w:compatSetting w:name="enableOpenTypeFeatures" w:uri="http://schemas.microsoft.com/office/word" w:val="1" /><w:compatSetting w:name="doNotFlipMirrorIndents" w:uri="http://schemas.microsoft.com/office/word" w:val="1" /><w:compatSetting w:name="differentiateMultirowTableHeaders" w:uri="http://schemas.microsoft.com/office/word" w:val="1" /><w:compatSetting w:name="useWord2013TrackBottomHyphenation" w:uri="http://schemas.microsoft.com/office/word" w:val="0" /></w:compat></w:settings>"#
         );
+    }
+
+    #[test]
+    fn test_settings_without_balance_single_byte_double_byte_width() {
+        let b = Settings::new()
+            .balance_single_byte_double_byte_width(false)
+            .build();
+        let xml = str::from_utf8(&b).unwrap();
+        assert!(xml.contains("<w:compat>"));
+        assert!(xml.contains("<w:doNotLeaveBackslashAlone"));
+        assert!(!xml.contains("<w:balanceSingleByteDoubleByteWidth"));
     }
 }

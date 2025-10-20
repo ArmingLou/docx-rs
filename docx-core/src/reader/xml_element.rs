@@ -152,6 +152,7 @@ pub enum XMLElement {
     DefaultTabStop,
     RunPropertyDefault,
     AdjustLineHeightInTable,
+    BalanceSingleByteDoubleByteWidth,
     CharacterSpacingControl,
     SectionProperty,
     PageSize,
@@ -394,6 +395,9 @@ impl FromStr for XMLElement {
             "docGrid" => Ok(XMLElement::DocGrid),
             "rPrDefault" => Ok(XMLElement::RunPropertyDefault),
             "adjustLineHeightInTable" => Ok(XMLElement::AdjustLineHeightInTable),
+            "balanceSingleByteDoubleByteWidth" => {
+                Ok(XMLElement::BalanceSingleByteDoubleByteWidth)
+            }
             "characterSpacingControl" => Ok(XMLElement::CharacterSpacingControl),
             "defaultTabStop" => Ok(XMLElement::DefaultTabStop),
             "divId" => Ok(XMLElement::DivId),
