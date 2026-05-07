@@ -42,6 +42,7 @@ pub enum RunChild {
     // For reader
     InstrTextString(String),
     FootnoteReference(FootnoteReference),
+    FootnoteRef,
     Shading(Shading),
 }
 
@@ -138,6 +139,11 @@ impl Serialize for RunChild {
                 let mut t = serializer.serialize_struct("FootnoteReference", 2)?;
                 t.serialize_field("type", "footnoteReference")?;
                 t.serialize_field("data", f)?;
+                t.end()
+            }
+            RunChild::FootnoteRef => {
+                let mut t = serializer.serialize_struct("FootnoteRef", 1)?;
+                t.serialize_field("type", "footnoteRef")?;
                 t.end()
             }
             RunChild::Shading(ref f) => {
@@ -336,8 +342,8 @@ impl Run {
     pub fn add_footnote_reference(mut self, footnote: Footnote) -> Run {
         self.run_property = RunProperty::new()
             .style("FootnoteReference")
-            .vert_align(VertAlignType::SuperScript)
-            .size(16); // 8pt = 16 half-points，比默认字体小一些但仍然清晰可见
+            .vert_align(VertAlignType::SuperScript);
+            // .size(16); // 8pt = 16 half-points，比默认字体小一些但仍然清晰可见
         self.children
             .push(RunChild::FootnoteReference(footnote.into()));
         self
@@ -384,6 +390,7 @@ impl BuildXML for RunChild {
             RunChild::DeleteInstrText(c) => c.build_to(stream),
             RunChild::InstrTextString(_) => unreachable!(),
             RunChild::FootnoteReference(c) => c.build_to(stream),
+            RunChild::FootnoteRef => XMLBuilder::from(stream).footnote_ref()?.into_inner(),
             RunChild::Shading(s) => s.build_to(stream),
         }
     }

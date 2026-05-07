@@ -273,6 +273,11 @@ impl Paragraph {
         self.0.property = p.take();
         self
     }
+
+    pub fn section_property(mut self, property: SectionProperty) -> Self {
+        self.0 = self.0.section_property(property.take());
+        self
+    }
 }
 
 impl Paragraph {

@@ -2,6 +2,7 @@ use serde::Serialize;
 use std::io::Write;
 
 use crate::documents::*;
+use crate::types::VertAlignType;
 use crate::xml_builder::*;
 use footnote_id::generate_footnote_id;
 
@@ -54,10 +55,11 @@ impl BuildXML for Footnote {
     ) -> xml::writer::Result<xml::writer::EventWriter<W>> {
         // To ensure docx compatible XML serialization for footnotes, we default to an empty paragraph.
         let mut footnote = self.clone();
-        if self.content == vec![] {
-            eprintln!("{:?}", footnote);
+        if self.content.is_empty() {
             footnote.add_content(Paragraph::new());
         }
+
+        prepend_reference_marker(&mut footnote);
 
         XMLBuilder::from(stream)
             .open_footnote(&format!("{}", self.id))?
@@ -65,6 +67,43 @@ impl BuildXML for Footnote {
             .close()?
             .into_inner()
     }
+}
+
+fn prepend_reference_marker(footnote: &mut Footnote) {
+    if let Some(first) = footnote.content.first_mut() {
+        // if let Some(run) = first.children.first() {
+        //     if contains_reference_marker(run) {
+        //         return;
+        //     }
+        // }
+
+        let mut run = Run::new().style("FootnoteReference").set_property(
+            RunProperty::new()
+                .style("FootnoteReference")
+                .vert_align(VertAlignType::SuperScript)
+                // .size(32),
+        );
+
+        run.children.push(RunChild::FootnoteRef);
+
+        // run.children
+        //     .push(RunChild::Text(Text {
+        //         text: format!("{}", footnote.id),
+        //         preserve_space: true,
+        //     }));
+
+        first.children.insert(0, ParagraphChild::Run(Box::new(run)));
+    }
+}
+
+fn contains_reference_marker(child: &ParagraphChild) -> bool {
+    if let ParagraphChild::Run(run) = child {
+        return run
+            .children
+            .iter()
+            .any(|c| matches!(c, RunChild::FootnoteReference(_)));
+    }
+    false
 }
 
 #[cfg(test)]
@@ -80,7 +119,7 @@ mod tests {
         let b = Footnote::new().build();
         assert_eq!(
             str::from_utf8(&b).unwrap(),
-            r#"<w:footnote w:id="1"><w:p w14:paraId="12345678"><w:pPr><w:rPr /></w:pPr></w:p></w:footnote>"#
+            r#"<w:footnote w:id="1"><w:p w14:paraId="12345678"><w:pPr><w:rPr /></w:pPr><w:r><w:rPr><w:vertAlign w:val="superscript" /><w:rStyle w:val="FootnoteReference" /></w:rPr><w:footnoteRef /></w:r></w:p></w:footnote>"#
         );
     }
 
@@ -91,7 +130,7 @@ mod tests {
             .build();
         assert_eq!(
             str::from_utf8(&b).unwrap(),
-            r#"<w:footnote w:id="1"><w:p w14:paraId="12345678"><w:pPr><w:rPr /></w:pPr><w:r><w:rPr /><w:t xml:space="preserve">hello</w:t></w:r></w:p></w:footnote>"#
+            r#"<w:footnote w:id="1"><w:p w14:paraId="12345678"><w:pPr><w:rPr /></w:pPr><w:r><w:rPr><w:vertAlign w:val="superscript" /><w:rStyle w:val="FootnoteReference" /></w:rPr><w:footnoteRef /></w:r><w:r><w:rPr /><w:t xml:space="preserve">hello</w:t></w:r></w:p></w:footnote>"#
         );
     }
 }

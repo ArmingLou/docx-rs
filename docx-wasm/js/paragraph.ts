@@ -20,6 +20,7 @@ import { TabValueType } from "./json/bindings/TabValueType";
 import { TabLeaderType } from "./json/bindings/TabLeaderType";
 import { NumPages } from "./num-pages";
 import { PageNum } from "./page-num";
+import { SectionProperty } from "./section-property";
 
 export type ParagraphChild =
   | Run
@@ -218,6 +219,11 @@ export class Paragraph {
 
   paragraphPropertyChange(propertyChange: ParagraphPropertyChange) {
     this.property.paragraphPropertyChange = propertyChange;
+    return this;
+  }
+
+  sectionProperty(section: SectionProperty) {
+    this.property.sectionProperty = section;
     return this;
   }
 

@@ -11,7 +11,15 @@ export type DocumentChildJSON =
   | CommentRangeEndJSON
   | BookmarkStartJSON
   | BookmarkEndJSON
-  | StructuredTagJSON;
+  | StructuredTagJSON
+  | SectionJSON;
+
+export type SectionJSON = {
+  type: "section";
+  data: {
+    property: SectionPropertyJSON;
+  };
+};
 
 export type DocumentJSON = {
   children: DocumentChildJSON[];

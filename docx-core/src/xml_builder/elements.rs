@@ -776,6 +776,12 @@ impl<W: Write> XMLBuilder<W> {
             .close()
     }
 
+    // FootnoteRef
+    // w:footnoteRef
+    pub(crate) fn footnote_ref(self) -> Result<Self> {
+        self.write(XmlEvent::start_element("w:footnoteRef"))?.close()
+    }
+
     // Footnotes
     open!(open_footnote, "w:footnote", "w:id");
 }

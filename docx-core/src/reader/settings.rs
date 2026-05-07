@@ -57,6 +57,11 @@ impl FromXML for Settings {
                         XMLElement::AdjustLineHeightInTable => {
                             settings = settings.adjust_line_height_in_table();
                         }
+                        XMLElement::BalanceSingleByteDoubleByteWidth => {
+                            let val = attributes::read_bool(&attributes);
+                            settings =
+                                settings.balance_single_byte_double_byte_width(val);
+                        }
                         XMLElement::CharacterSpacingControl => {
                             let val = read_val(&attributes);
                             if let Some(val) = val {

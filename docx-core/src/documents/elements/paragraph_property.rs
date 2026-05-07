@@ -25,8 +25,8 @@ pub struct ParagraphProperty {
     pub keep_next: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub keep_lines: Option<bool>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub bidi:Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bidi: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub page_break_before: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -133,8 +133,8 @@ impl ParagraphProperty {
         self.page_break_before = Some(v);
         self
     }
-    pub fn bidi(mut self,v:bool)->Self{
-        self.bidi=Some(v);
+    pub fn bidi(mut self, v: bool) -> Self {
+        self.bidi = Some(v);
         self
     }
     pub fn widow_control(mut self, v: bool) -> Self {
@@ -229,13 +229,14 @@ impl BuildXML for ParagraphProperty {
             .add_optional_child(&self.outline_lvl)?
             .add_optional_child(&self.paragraph_property_change)?
             .add_optional_child(&self.borders)?
+            .add_optional_child(&self.section_property)?
             .add_optional_child(&self.text_alignment)?
             .add_optional_child(&self.adjust_right_ind)?
             .apply_opt(self.snap_to_grid, |v, b| b.snap_to_grid(v))?
             .apply_if(self.keep_next, |b| b.keep_next())?
             .apply_if(self.keep_lines, |b| b.keep_lines())?
             .apply_if(self.page_break_before, |b| b.page_break_before())?
-            .apply_if(self.bidi,|b| b.bidi())?
+            .apply_if(self.bidi, |b| b.bidi())?
             .apply_opt(self.widow_control, |flag, b| {
                 b.widow_control(if flag { "1" } else { "0" })
             })?
@@ -265,11 +266,14 @@ mod tests {
     }
 
     #[test]
-    fn test_bidi(){
-        let c=ParagraphProperty::new().bidi(true);
-        let b=c.build();
+    fn test_bidi() {
+        let c = ParagraphProperty::new().bidi(true);
+        let b = c.build();
         println!("-----Test bidi: {}", str::from_utf8(&b).unwrap());
-        assert_eq!(str::from_utf8(&b).unwrap(),r#"<w:pPr><w:rPr /><w:bidi /></w:pPr>"#);
+        assert_eq!(
+            str::from_utf8(&b).unwrap(),
+            r#"<w:pPr><w:rPr /><w:bidi /></w:pPr>"#
+        );
     }
     #[test]
     fn test_alignment() {

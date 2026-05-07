@@ -6,6 +6,7 @@ import { Tab } from "./json/bindings/Tab";
 import { AlignmentType } from "./json/bindings/AlignmentType";
 import { TabValueType } from "./json/bindings/TabValueType";
 import { TabLeaderType } from "./json/bindings/TabLeaderType";
+import { SectionProperty } from "./section-property";
 
 export { AlignmentType } from "./json/bindings/AlignmentType";
 
@@ -88,6 +89,7 @@ export class ParagraphProperty {
   _adjustRightInd?: number;
   _tabs?: Tab[];
   frameProperty?: FrameProperty;
+  sectionProperty?: SectionProperty;
 
   constructor() {}
 
@@ -124,6 +126,11 @@ export class ParagraphProperty {
 
   style(id: string) {
     this.styleId = id;
+    return this;
+  }
+
+  sectionProperty(section: SectionProperty) {
+    this.sectionProperty = section;
     return this;
   }
 }
